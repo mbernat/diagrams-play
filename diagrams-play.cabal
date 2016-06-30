@@ -59,13 +59,17 @@ executable diagrams-play
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.8 && <4.9
+                     , cairo
                      , diagrams-graphviz
                      , diagrams-lib
-                     , diagrams-rasterific
                      , diagrams-cairo
                      , diagrams
                      , fgl
                      , graphviz
+                     , linear
+                     , random
+                     , sdl2
+                     , sdl2-cairo
                      , text
 
   -- Directories containing source files.
