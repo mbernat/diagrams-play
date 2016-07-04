@@ -52,7 +52,9 @@ executable dynamic-network
 
   -- Modules included in this executable, other than Main.
   other-modules:
-        GraphStream
+                DivisionGraph
+                Graph
+                GraphStream
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
@@ -71,6 +73,9 @@ executable dynamic-network
                      , sdl2
                      , sdl2-cairo
                      , text
+
+                     , quickcheck-instances
+                     , QuickCheck
 
   -- Directories containing source files.
   hs-source-dirs:      src
