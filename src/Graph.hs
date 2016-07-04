@@ -53,8 +53,8 @@ empty = Graph [] []
 -- | Function suitable for folding the stream of graph operations.
 applyGraphOp :: Graph -> GraphOp -> Graph
 applyGraphOp g = \case
-    AddNode id label -> addNode id label g
-    RemoveNode id -> removeNode id g
+    AddNode nodeId label -> addNode nodeId label g
+    RemoveNode nodeId -> removeNode nodeId g
     AddEdge e label -> addEdge e label g
     RemoveEdge e -> removeEdge e g
 
@@ -62,19 +62,19 @@ applyGraphOp g = \case
 
 -- | Add a node with the given ID and label.
 addNode :: NodeId -> NodeLabel -> Graph -> Graph
-addNode id label Graph{..} = Graph
+addNode nodeId label Graph{..} = Graph
     { nodes = node : nodes
     , edges = edges
     }
   where
     node = Node
-        { nodeId = id
+        { nodeId = nodeId
         , nodeLabel = label
         }
 -- | Remove 0 or more nodes with the given ID.
 removeNode :: NodeId -> Graph -> Graph
-removeNode id Graph{..} = Graph
-    { nodes = filter (\n -> nodeId n /= id) nodes
+removeNode nId Graph{..} = Graph
+    { nodes = filter (\n -> nodeId n /= nId) nodes
     , edges = edges
     }
 
@@ -83,19 +83,19 @@ removeNode id Graph{..} = Graph
 
 -- | Add a labelled edge between the nodes specified by IDs.
 addEdge :: (NodeId, NodeId) -> EdgeLabel -> Graph -> Graph
-addEdge id label Graph{..} = Graph
+addEdge edgeId label Graph{..} = Graph
     { nodes = nodes
     , edges = edge : edges
     }
   where
     edge = Edge
-        { edgeId = id
+        { edgeId = edgeId
         , edgeLabel = label
         }
 
 -- | Remove 0 or more edges between nodes specified by IDs.
 removeEdge :: (NodeId, NodeId) -> Graph -> Graph
-removeEdge id Graph{..} = Graph
+removeEdge eId Graph{..} = Graph
     { nodes = nodes
-    , edges = filter (\e -> edgeId e /= id) edges
+    , edges = filter (\e -> edgeId e /= eId) edges
     }

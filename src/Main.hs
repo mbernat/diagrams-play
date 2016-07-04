@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Main (main)
 where
 
 import Control.Concurrent
+import Data.Graph.Inductive.PatriciaTree
 import Data.GraphViz
 -- import           Data.GraphViz.Attributes.Complete
 -- import           Data.GraphViz.Commands
+import Data.Text (Text)
 import Diagrams.Backend.Cairo
 import Diagrams.Backend.Cairo.Internal
 import Diagrams.Prelude
@@ -18,12 +21,11 @@ import SDL.Cairo
 import SDL.Init
 import SDL.Video
 import System.Random
+import Test.QuickCheck.Arbitrary
+import Test.QuickCheck.Gen
 
---import GraphStream
-import DivisionGraph
-
---q :: GraphStream
---q = []
+import Graph
+import GraphStream
 
 rd :: Diagram B -> (IO (), Cairo.Render ())
 rd = renderDia Cairo opts
@@ -37,17 +39,35 @@ rd = renderDia Cairo opts
         , _cairoBypassAdjust = True
         }
 
-renderGraph :: Integer -> IO (Cairo.Render ())
-renderGraph count = do
+{-
+Note that renaming is a universal problem everywhere.
+Lambda calculus has it (variable names),
+graphs have it (node/edge IDs), etc.
+It would be great if IDs were only informative but the relation itself
+would be encoded differently.
+Would ABTs help us here?
+-}
+
+realGraph :: Graph -> Gr Text Text
+realGraph Graph{..} = mkGraph nodes' edges'
+  where
+    nodes' = map (\n -> nodeId n) nodes
+    edges' = map mkEdge edges
+    mkEdge Edge{..} = (fst edgeId, snd edgeId, edgeLabel)
+
+renderGraph :: Graph -> IO (Cairo.Render ())
+renderGraph graph = do
     let params :: GraphvizParams Int v e () v
         params = defaultDiaParams
                  { fmtEdge = const [arrowTo noArrow] }
-    divisionGraph' <- layoutGraph' params Dot (divisionGraph count)
+    let real = realGraph graph
+    print real
+    graph' <- layoutGraph' params Dot real
     let drawing :: Diagram B
         drawing = drawGraph
                        (const $ place (circle 19))
                        (\_ _ _ _ _ p -> stroke p)
-                       divisionGraph'
+                       graph'
     pure . snd . rd $ drawing # frame 1
 
 main :: IO ()
@@ -56,7 +76,7 @@ main = do
     window <- createWindow "Dynamic Graph Viewer" defaultWindow
     renderer <- createRenderer window (-1) defaultRenderer
 
-    loop renderer
+    loop renderer empty
 
 textureSize :: V2 CInt
 textureSize = CInt . fromIntegral <$> size'
@@ -64,10 +84,11 @@ textureSize = CInt . fromIntegral <$> size'
     size' :: V2 Int
     size' = V2 790 590
 
-loop :: Renderer -> IO ()
-loop renderer = do
-    count <- randomIO
-    cairoRender <- renderGraph (count `mod` 50 + 30)
+loop :: Renderer -> Graph -> IO ()
+loop renderer graph = do
+    graphOp <- generate arbitrary
+    let graph' = applyGraphOp graph graphOp
+    cairoRender <- renderGraph graph'
     texture <- createCairoTexture renderer textureSize
     withCairoTexture' texture $ \surface ->
         Cairo.renderWith surface $ do
@@ -85,4 +106,4 @@ loop renderer = do
 
     let delay = 10^(6::Int)
     threadDelay delay
-    loop renderer
+    loop renderer graph'
