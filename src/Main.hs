@@ -26,6 +26,7 @@ import Test.QuickCheck.Gen
 
 import Graph
 import GraphStream
+import Pcap
 
 rd :: Diagram B -> (IO (), Cairo.Render ())
 rd = renderDia Cairo opts
@@ -72,6 +73,10 @@ renderGraph graph = do
 
 main :: IO ()
 main = do
+    (header, packet) <- readPcap "./test.pcap"
+    print header
+    print packet
+
     initializeAll
     window <- createWindow "Dynamic Graph Viewer" defaultWindow
     renderer <- createRenderer window (-1) defaultRenderer

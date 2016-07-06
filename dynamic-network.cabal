@@ -55,12 +55,14 @@ executable dynamic-network
                 DivisionGraph
                 Graph
                 GraphStream
+                Pcap
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.8 && <4.9
+                     , bytestring
                      , cairo
                      , diagrams-graphviz
                      , diagrams-lib
@@ -69,6 +71,8 @@ executable dynamic-network
                      , fgl
                      , graphviz
                      , linear
+                     , network-house
+                     , pcap
                      , random
                      , sdl2
                      , sdl2-cairo
