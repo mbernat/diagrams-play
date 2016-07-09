@@ -52,7 +52,7 @@ Would ABTs help us here?
 realGraph :: Graph -> Gr Text Text
 realGraph Graph{..} = mkGraph nodes' edges'
   where
-    nodes' = map (\n -> nodeId n) nodes
+    nodes' = map nodeId nodes
     edges' = map mkEdge edges
     mkEdge Edge{..} = (fst edgeId, snd edgeId, edgeLabel)
 
@@ -73,10 +73,6 @@ renderGraph graph = do
 
 main :: IO ()
 main = do
-    (header, packet) <- readPcap "./test.pcap"
-    print header
-    print packet
-
     initializeAll
     window <- createWindow "Dynamic Graph Viewer" defaultWindow
     renderer <- createRenderer window (-1) defaultRenderer
