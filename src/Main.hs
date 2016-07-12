@@ -8,7 +8,9 @@ import Data.Graph.Inductive.PatriciaTree
 import Data.GraphViz
 -- import           Data.GraphViz.Attributes.Complete
 -- import           Data.GraphViz.Commands
+import Data.List
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Diagrams.Backend.Cairo
 import Diagrams.Backend.Cairo.Internal
 import Diagrams.Prelude
@@ -52,8 +54,8 @@ Would ABTs help us here?
 realGraph :: Graph -> Gr Text Text
 realGraph Graph{..} = mkGraph nodes' edges'
   where
-    nodes' = map nodeId nodes
-    edges' = map mkEdge edges
+    nodes' = nub $ map nodeId nodes
+    edges' = nub $ map mkEdge edges
     mkEdge Edge{..} = (fst edgeId, snd edgeId, edgeLabel)
 
 renderGraph :: Graph -> IO (Cairo.Render ())
@@ -65,11 +67,19 @@ renderGraph graph = do
     print real
     graph' <- layoutGraph' params Dot real
     let drawing :: Diagram B
-        drawing = drawGraph
-                       (const $ place (circle 19))
-                       (\_ _ _ _ _ p -> stroke p)
-                       graph'
+        drawing = drawGraph drawNode drawEdge graph'
     pure . snd . rd $ drawing # frame 1
+  where
+    drawNode :: Text -> P2 Double -> Diagram B
+    drawNode node pos =
+        -- FIXME this reflection is a hack to fix upside-down rendering.
+        -- The actual problem is probably caused in texture reversal in
+        -- Cairo or SDL
+        place (reflectY $ text (Text.unpack node) # fontSize (local 10)) pos <>
+        place (circle 19) pos
+
+    drawEdge :: Text -> P2 Double -> Text -> P2 Double -> Text -> Diagrams.Prelude.Path V2 Double -> Diagram B
+    drawEdge v1 pos1 v2 pos2 e = stroke
 
 main :: IO ()
 main = do
@@ -77,7 +87,11 @@ main = do
     window <- createWindow "Dynamic Graph Viewer" defaultWindow
     renderer <- createRenderer window (-1) defaultRenderer
 
-    loop renderer empty
+    msg <- readTcpPeers "./skog.pcap"
+    let ops = reverse $ concatMap messageToGraphOps msg
+    let start = fst $ head ops
+
+    loop renderer ops start
 
 textureSize :: V2 CInt
 textureSize = CInt . fromIntegral <$> size'
@@ -85,13 +99,15 @@ textureSize = CInt . fromIntegral <$> size'
     size' :: V2 Int
     size' = V2 790 590
 
-loop :: Renderer -> Graph -> IO ()
-loop renderer graph = do
-    graphOp <- generate arbitrary
-    let graph' = applyGraphOp graph graphOp
-    cairoRender <- renderGraph graph'
+loop :: Renderer -> GraphStream PcapTime -> PcapTime -> IO ()
+loop renderer ops time = do
+    let someOps = selectStream time ops
+    let graph = foldl applyGraphOp empty (map snd someOps)
+    -- diagrams to cairo
+    cairoRender <- renderGraph graph
     texture <- createCairoTexture renderer textureSize
     withCairoTexture' texture $ \surface ->
+        -- cairo to (SDL?) texture
         Cairo.renderWith surface $ do
             Cairo.setSourceRGB 255 255 255
             Cairo.rectangle 5 5 780 580
@@ -102,9 +118,16 @@ loop renderer graph = do
     clear renderer
     -- Region in the main window
     -- Rectangle takes (x, y) point position and (x, y) vector extent
+    -- (SDL?) texture to graphics card
     copy renderer texture Nothing (Just $ Rectangle (P $ V2 5 5) textureSize)
     present renderer
 
-    let delay = 10^(6::Int)
+    let delay = 10^(5::Int)
     threadDelay delay
-    loop renderer graph'
+    loop renderer ops (incTime time (fromIntegral delay))
+  where
+    incTime (PcapTime (s, u)) delay = PcapTime (secs, usecs)
+      where
+        secs = s + carry
+        carry = (u + delay) `div` 10^6
+        usecs = (u + delay) `mod` 10^6

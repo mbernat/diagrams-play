@@ -1,8 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Pcap
-    ( Peers(..)
+    ( PcapTime(..)
+    , Peers(..)
     , arpProxy
     , ethernetProxy
     , ipv4Proxy
+    , messageToGraphOps
     , readParse
     , readPcap
     , readTcpPeers
@@ -11,10 +15,12 @@ module Pcap
     )
 where
 
+import Data.Monoid ((<>))
 import Data.Proxy
 import Data.Word
 
 import Data.ByteString
+import qualified Data.Text as Text
 import qualified Net.ARP as ARP
 import qualified Net.IPv4 as IPv4
 import qualified Net.TCP as TCP
@@ -24,6 +30,8 @@ import Net.Packet
 import Net.PacketParsing
 import Net.PortNumber
 import qualified Network.Pcap as Pcap
+
+import GraphStream
 
 
 data OpaqueContent = OpaqueContent
@@ -40,6 +48,29 @@ data Peers = Peers
     }
   deriving (Show)
 
+newtype PcapTime = PcapTime { unPcapTime :: (Word32, Word32) }
+  deriving (Eq, Show)
+
+instance Ord PcapTime where
+    (PcapTime (s1, u1)) <= (PcapTime (s2, u2)) =
+        s1 <= s2 || (s1 == s2 && u1 <= u2)
+
+data Message = Message
+    { peers :: Peers
+    , timestamp :: PcapTime
+    }
+  deriving (Show)
+
+messageToGraphOps :: Message -> GraphStream PcapTime
+messageToGraphOps Message{..} =
+    [ (timestamp, AddNode from "")
+    , (timestamp, AddNode to "")
+    , (timestamp, AddEdge (from, to) "")
+    ]
+  where
+    from = Text.pack $ show (source peers)-- <> show (sourcePort peers)
+    to = Text.pack $ show (dest peers)-- <> show (destPort peers)
+
 type TCP a = Ethernet.Packet (IPv4.Packet (TCP.Packet a))
 type UDP a = Ethernet.Packet (IPv4.Packet (UDP.Packet a))
 
@@ -54,10 +85,16 @@ tcpToPeers eth = Peers
     ipv4 = Ethernet.content eth
     tcp = IPv4.content ipv4
 
-readTcpPeers :: FilePath -> IO [Maybe Peers]
+readTcpPeers :: FilePath -> IO [Message]
 readTcpPeers file = do
     hps <- readParse tcpProxy file
-    pure . flip Prelude.map hps $ \(_, packet) -> fmap tcpToPeers packet
+    pure $ Prelude.concatMap mkMessage hps
+  where
+    mkMessage (_, Nothing) = []
+    mkMessage (header, Just packet) = pure Message
+        { peers = tcpToPeers packet
+        , timestamp = PcapTime (Pcap.hdrSeconds header, Pcap.hdrUseconds header)
+        }
 
 ethernetProxy :: Proxy (Ethernet.Packet OpaqueContent)
 ethernetProxy = Proxy

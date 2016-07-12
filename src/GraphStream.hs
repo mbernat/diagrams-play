@@ -17,7 +17,6 @@ module GraphStream
     , GraphStream
     , NodeId
     , NodeLabel
-    , Timestamp
     , selectStream
     )
 where
@@ -28,11 +27,10 @@ import Test.QuickCheck.Gen
 import Test.QuickCheck.Instances()
 
 
-type GraphStream = [(Timestamp, GraphOp)]
+type GraphStream t = [(t, GraphOp)]
 
 type NodeLabel = Text
 type EdgeLabel = Text
-type Timestamp = Double
 type NodeId = Text
 
 data GraphOp
@@ -40,6 +38,7 @@ data GraphOp
     | RemoveNode NodeId
     | AddEdge (NodeId, NodeId) EdgeLabel
     | RemoveEdge (NodeId, NodeId)
+  deriving (Show)
 
 instance Arbitrary GraphOp where
     arbitrary = oneof
@@ -59,5 +58,5 @@ TODO consider representing the streams continuously (as step functions)
 
 -- TODO make this efficient.
 -- | Select the part of the stream up to the given moment.
-selectStream :: Timestamp -> GraphStream -> GraphStream
+selectStream :: Ord t => t -> GraphStream t -> GraphStream t
 selectStream upto = filter (\(t, _) -> t <= upto)

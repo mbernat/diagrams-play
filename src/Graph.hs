@@ -62,9 +62,8 @@ applyGraphOp g = \case
 
 -- | Add a node with the given ID and label.
 addNode :: NodeId -> NodeLabel -> Graph -> Graph
-addNode nodeId label Graph{..} = Graph
+addNode nodeId label graph@Graph{..} = graph
     { nodes = node : nodes
-    , edges = edges
     }
   where
     node = Node
@@ -73,9 +72,8 @@ addNode nodeId label Graph{..} = Graph
         }
 -- | Remove 0 or more nodes with the given ID.
 removeNode :: NodeId -> Graph -> Graph
-removeNode nId Graph{..} = Graph
+removeNode nId graph@Graph{..} = graph
     { nodes = filter (\n -> nodeId n /= nId) nodes
-    , edges = edges
     }
 
 -- TODO do we allow multiple edges between the same nodes?
@@ -83,9 +81,8 @@ removeNode nId Graph{..} = Graph
 
 -- | Add a labelled edge between the nodes specified by IDs.
 addEdge :: (NodeId, NodeId) -> EdgeLabel -> Graph -> Graph
-addEdge edgeId label Graph{..} = Graph
-    { nodes = nodes
-    , edges = edge : edges
+addEdge edgeId label graph@Graph{..} = graph
+    { edges = edge : edges
     }
   where
     edge = Edge
@@ -95,7 +92,6 @@ addEdge edgeId label Graph{..} = Graph
 
 -- | Remove 0 or more edges between nodes specified by IDs.
 removeEdge :: (NodeId, NodeId) -> Graph -> Graph
-removeEdge eId Graph{..} = Graph
-    { nodes = nodes
-    , edges = filter (\e -> edgeId e /= eId) edges
+removeEdge eId graph@Graph{..} = graph
+    { edges = filter (\e -> edgeId e /= eId) edges
     }
