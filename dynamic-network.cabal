@@ -46,40 +46,73 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 
-executable dynamic-network
+library
+  exposed-modules:
+                  Graph
+                  GraphStream
+                  Layout
+                  Pcap
+
+  -- Other library packages from which modules are imported.
+  build-depends:       base >=4.8 && <4.9
+                     , bytestring
+                     , containers
+                     , linear
+                     , network-house
+                     , pcap
+                     , rigid-body
+                     , text
+                     , time
+
+                     , quickcheck-instances
+                     , QuickCheck
+
+  -- Directories containing source files.
+  hs-source-dirs:      src
+
+  -- Base language which the package is written in.
+  default-language:    Haskell2010
+
+executable dynamic-network-view
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
+
+  hs-source-dirs:      main
 
   -- Modules included in this executable, other than Main.
   other-modules:
                 DivisionGraph
-                Graph
-                GraphStream
-                Pcap
+                Forces
+                Render
+                Time
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.8 && <4.9
+
                      , bytestring
                      , cairo
-                     , diagrams-graphviz
+                     , containers
                      , diagrams-lib
                      , diagrams-cairo
                      , diagrams
                      , fgl
-                     , graphviz
+                     , force-layout
                      , linear
                      , network-house
                      , pcap
                      , random
+                     , rigid-body
                      , sdl2
                      , sdl2-cairo
                      , text
+                     , time
 
                      , quickcheck-instances
                      , QuickCheck
+
 
   -- Directories containing source files.
   hs-source-dirs:      src

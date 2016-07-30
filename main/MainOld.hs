@@ -1,23 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-module Main (main)
+module MainOld (main)
 where
 
 import Control.Concurrent
 import Data.Graph.Inductive.PatriciaTree
-import Data.GraphViz
--- import           Data.GraphViz.Attributes.Complete
--- import           Data.GraphViz.Commands
 import Data.List
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Diagrams.Backend.Cairo
 import Diagrams.Backend.Cairo.Internal
 import Diagrams.Prelude
-import Diagrams.TwoD.GraphViz
 import Foreign.C.Types
 import qualified Graphics.Rendering.Cairo as Cairo
 import Linear (V4(..))
+import Physics.ForceLayout
 import SDL (($=))
 import SDL.Cairo
 import SDL.Init
@@ -42,14 +39,8 @@ rd = renderDia Cairo opts
         , _cairoBypassAdjust = True
         }
 
-{-
-Note that renaming is a universal problem everywhere.
-Lambda calculus has it (variable names),
-graphs have it (node/edge IDs), etc.
-It would be great if IDs were only informative but the relation itself
-would be encoded differently.
-Would ABTs help us here?
--}
+
+
 
 realGraph :: Graph -> Gr Text Text
 realGraph Graph{..} = mkGraph nodes' edges'
